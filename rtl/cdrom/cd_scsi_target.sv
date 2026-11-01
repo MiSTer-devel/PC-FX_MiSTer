@@ -1028,8 +1028,8 @@ always_ff @(posedge clk) begin
 			end
 			X_MWAIT: if (m_done) begin
 				if (m_err != E_NONE) begin
-					st.err   <= op == 8'h44 ? (m_err == E_NOT_DATA ? E_HEADER : E_BAD_PARAM) : m_err;
-					st.sense <= op == 8'h44 ? (m_err == E_NOT_DATA ? E_HEADER : E_BAD_PARAM) : m_err;
+					st.err   <= op == 8'h44 && m_err != E_EOV ? (m_err == E_NOT_DATA ? E_HEADER : E_BAD_PARAM) : m_err;
+					st.sense <= op == 8'h44 && m_err != E_EOV ? (m_err == E_NOT_DATA ? E_HEADER : E_BAD_PARAM) : m_err;
 					st.xs    <= X_STAT;
 				end else if (is_read || op == 8'h44) begin
 					if (st.scnt == 24'd0 && is_read) begin
@@ -1495,8 +1495,8 @@ always_ff @(posedge clk) begin
 					if (st.ml_err || st.ml_st != 3'd2 ||
 					    (st.ml_mode.custom && st.ml_mode.p28_applied &&
 					    {1'b0, ml_origin} + {1'b0, st.ml_mode.p28[11:0]} > 13'd2352)) begin
-						st.err   <= E_BAD_PARAM;
-						st.sense <= E_BAD_PARAM;
+						st.err   <= E_BAD_LIST;
+						st.sense <= E_BAD_LIST;
 					end else begin
 						st.mode  <= st.ml_mode;
 						st.err   <= E_NONE;

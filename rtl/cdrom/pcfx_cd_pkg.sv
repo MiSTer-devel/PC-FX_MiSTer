@@ -38,6 +38,7 @@ package pcfx_cd_pkg;
 	localparam logic [3:0] E_NOT_PLAY  = 4'd11;  // 5/2C
 	localparam logic [3:0] E_RESET     = 4'd12;  // 6/29
 	localparam logic [3:0] E_CHANGED   = 4'd13;  // 6/28
+	localparam logic [3:0] E_BAD_LIST  = 4'd14;  // 5/2A
 
 	function automatic logic [11:0] sense_kc(input logic [3:0] e);
 		case (e)
@@ -54,6 +55,7 @@ package pcfx_cd_pkg;
 		E_NOT_PLAY:  sense_kc = 12'h52C;
 		E_RESET:     sense_kc = 12'h629;
 		E_CHANGED:   sense_kc = 12'h628;
+		E_BAD_LIST:  sense_kc = 12'h52A;
 		default:     sense_kc = 12'h000;
 		endcase
 	endfunction

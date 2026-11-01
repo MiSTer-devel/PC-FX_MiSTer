@@ -114,6 +114,24 @@ logic  [1:0] bkup;
 // A 16-bit device sees the upper half when byte lanes 1:0 are off.
 wire hi = &be_n[1:0];
 
+// A T1 started from an idle bus can show its pins from the CPU's mid-clock
+// edge, so BCYST is up only for the half clock before a CE edge. Hold it over
+// the CE-aligned T1 that follows, so every block sees the same T1 either way.
+logic bc_prev_q, t1_held_q;
+wire  t1_early = !bcyst_n && ce_sck && !bc_prev_q;
+wire  t1_n     = !((!bcyst_n && !t1_early) || t1_held_q);
+
+always_ff @(posedge clk) begin
+	if (reset || ss_shift) begin
+		bc_prev_q <= 1'b0;
+		t1_held_q <= 1'b0;
+	end else if (ce_sys) begin
+		bc_prev_q <= !bcyst_n;
+		if (ce_sck)
+			t1_held_q <= t1_early;
+	end
+end
+
 ga_decode u_decode (
 	.a_top    (a[31:24]),
 	.a22      (a[22]),
@@ -145,7 +163,7 @@ ga_mmc #(
 	.be_n     (be_n),
 	.mrq_n    (mrq_n),
 	.rw       (rw),
-	.bcyst_n  (bcyst_n),
+	.bcyst_n  (t1_n),
 	.ras_n    (ras_n),
 	.cas_n    (cas_n),
 	.ma       (ma),
@@ -182,7 +200,7 @@ ga_bus #(
 	.d_oe       (d_oe),
 	.hi         (hi),
 	.rw         (rw),
-	.bcyst_n    (bcyst_n),
+	.bcyst_n    (t1_n),
 	.ready_n    (ready_n),
 	.szrq_n     (szrq_n),
 	.dec_kind   (dec_kind),
@@ -227,7 +245,7 @@ assign ss_busy = mmc_busy || io_busy;
 ga_rom u_rom (
 	.a_rom     (a[31:28] == 4'hF),
 	.mrq_n     (mrq_n),
-	.bcyst_n   (bcyst_n),
+	.bcyst_n   (t1_n),
 	.cyc       (cyc),
 	.kind      (kind),
 	.rw        (rw),

@@ -1,10 +1,10 @@
 // NEC uPD70732 (V810) at package polarity around the NECv810 core.
 //
 // Pins follow the data sheet pin table; a bar there is _n here. MRQ is
-// active only on memory cycles, so an I/O cycle has MRQ inactive. Every pin
-// comes from a flop: a bus cycle shows T1 (BCYST) and T2 (DA) on the pins,
-// READY and SZRQ are sampled at the CLK fall in T2 (phi1), data at the CLK
-// rise that ends it, as in the data sheet's AC tables.
+// active only on memory cycles, so an I/O cycle has MRQ inactive. Every bus
+// cycle starts with a T1 (BCYST) that ignores READY; READY, SZRQ and data are
+// taken at the CLK rise that ends T2 or a wait state, so the glue holds READY
+// and SZRQ through the whole last state. DA marks data cycles.
 
 module upd70732 #(
 	parameter bit DEBUG = 1'b0
@@ -73,13 +73,12 @@ logic        retire, halted, illegal;
 logic [15:0] retire_insn;
 
 /* verilator lint_off UNUSEDSIGNAL */
-logic        dout_oe, cycle_tag;
+logic        dout_oe, cycle_tag, bus_t1;
 logic [31:0] reg_data;
 /* verilator lint_on UNUSEDSIGNAL */
 
 NECv810 #(
 	.IO_MRQ     (1),
-	.T2_PINS    (1),
 	.VB_EXT     (0)
 ) u_cpu (
 	.clk_i                   (clk),
@@ -127,6 +126,7 @@ NECv810 #(
 	.bcyst_oe_o              (bcyst_oe),
 	.adrs_err_n_o            (adrserr_n),
 	.cycle_tag_o             (cycle_tag),
+	.bus_t1_o                (bus_t1),
 	.block_o                 (block),
 	.hldak_o                 (hldak),
 	.dbg_reg_addr_i          (5'd0),

@@ -15,7 +15,8 @@
 //
 // A write is buffered: the CPU sees READY in step 1 (2 clocks in all) while
 // the bus finishes on its own. A HuC cycle arriving while the buffer is busy
-// waits for it. A read sees READY in step 5 (6 clocks).
+// waits for it and starts the clock after it ends. A read sees READY in step
+// 5 (6 clocks).
 
 module ga_bus
 	import upd65641_pkg::*;
@@ -97,7 +98,7 @@ wire [7:0] busy_v = {2'b11, busy_n};
 wire busy_hold = !busy_v[st.chip];
 wire io_last   = st.busy && st.step == 3'd5;
 wire strobe_up = ce_sck && st.busy && st.step == 3'd4 && !busy_hold;
-wire io_start  = ce_sck && (!st.busy || io_last) &&
+wire io_start  = ce_sck && !st.busy &&
 	((t1_end && (dec_kind == K_IOR || dec_kind == K_IOW)) || (cyc_q && io_kind && !owner_q));
 
 always_comb begin
@@ -109,8 +110,11 @@ always_comb begin
 	endcase
 end
 
-wire io_free = !st.busy || io_last;
+wire io_free = !st.busy;
 wire wait_ok = !(kind_q == K_EXP && !xeb_n);
+// A glue register read waits out a buffered HuC write so it sees that write
+// (the 6270 AR hold registers).
+wire glue_rd_wait = rw && st.busy;
 
 // At a CE edge: does the cycle enter its last T-state here?
 logic ready_q, ready_next;
@@ -121,6 +125,7 @@ always_comb begin
 			K_RAM:   ready_next = ram_rdy;
 			K_IOW:   ready_next = io_free;
 			K_IOR:   ready_next = 1'b0;
+			K_GLUE:  ready_next = dec_wait == 4'd0 && !glue_rd_wait;
 			default: ready_next = dec_wait == 4'd0;
 		endcase
 	end else if (cyc_q && !ready_q) begin
@@ -128,6 +133,7 @@ always_comb begin
 			K_RAM:   ready_next = ram_rdy;
 			K_IOW:   ready_next = !owner_q && io_free;
 			K_IOR:   ready_next = owner_q && st.step == 3'd4 && !busy_hold;
+			K_GLUE:  ready_next = wcnt_q == 4'd0 ? !glue_rd_wait : wcnt_q == 4'd1;
 			default: ready_next = wcnt_q == 4'd1 && wait_ok;
 		endcase
 	end

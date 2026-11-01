@@ -46,10 +46,8 @@ module king_bg_addrgen
 	input  logic [3:0][7:0]  cg,
 	input  logic       [7:0] bat0s,
 	input  logic       [7:0] cg0s,
-	/* verilator lint_off UNUSEDSIGNAL */
 	input  logic      [10:0] sx0,        // fine scroll is applied when reading
 	input  logic [2:0][9:0]  sx,
-	/* verilator lint_on UNUSEDSIGNAL */
 	input  logic [3:0][10:0] yl,         // line Y per BG, wrapped
 	input  logic [3:0][15:0] batl,       // BAT latches
 	input  logic      [15:0] ax,
@@ -94,7 +92,10 @@ always_comb begin
 		tp = signed'({1'b0, nkx}) - 10'sd8;
 end
 
-wire tp_ok = tp >= 10'sd0 && tp < 10'sd264;
+// Group 32 is only seen when a fine scroll moves the window into it; without
+// one its reads are skipped and the slot is free.
+wire  [2:0] fine = n == 2'd0 ? sx0[2:0] : n == 2'd1 ? sx[0][2:0] : n == 2'd2 ? sx[1][2:0] : sx[2][2:0];
+wire tp_ok = tp >= 10'sd0 && tp < (pp || fine != 3'd0 ? 10'sd264 : 10'sd256);
 
 // Scrolled position of a non-rotated dot, wrapped to the BG's space.
 wire [10:0] xs0 = {sx0[10:3], 3'd0} + {2'd0, tp[8:0]};

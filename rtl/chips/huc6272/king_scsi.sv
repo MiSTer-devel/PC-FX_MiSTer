@@ -340,7 +340,8 @@ assign sel_n_o  = 1'b0;
 assign sel_n_oe = st.icmd[2];
 assign atn_n_o  = 1'b0;
 assign atn_n_oe = st.icmd[1];
-assign db_n_oe  = st.icmd[0] && !io;
+// Selection IDs precede the target's transfer phase.
+assign db_n_oe  = st.icmd[0] && !io && (!bsy || st.icmd[2] || pmatch);
 assign db_n_o   = st.dmacr[2] ? st.odata : ~st.odata;
 assign sbck_o   = sb_on && !sp[5];
 

@@ -162,6 +162,10 @@ logic  [3:0] pages;
 logic        mode4m, cpu_bank, gnt_cpu_a, gnt_cpu_b;
 kreq_t       cpu_req;
 
+// In 1M mode the board's 4M DRAMs drive only the low byte on a read.
+wire  [15:0] ka_rd = mode4m ? kra_q : {8'hFF, kra_q[7:0]};
+wire  [15:0] kb_rd = mode4m ? krb_q : {8'hFF, krb_q[7:0]};
+
 king_cpu_kram #(.SAVESTATE(SAVESTATE)) cpu_kram (
 	.clk,
 	.reset (rst_int),
@@ -172,8 +176,8 @@ king_cpu_kram #(.SAVESTATE(SAVESTATE)) cpu_kram (
 	.req (cpu_req),
 	.req_bank (cpu_bank),
 	.gnt (gnt_cpu_a || gnt_cpu_b),
-	.ka_q (kra_q),
-	.kb_q (krb_q),
+	.ka_q (ka_rd),
+	.kb_q (kb_rd),
 	.ss_shift,
 	.ss_si (ss_2),
 	.ss_so (ss_3)
@@ -208,7 +212,7 @@ king_bg #(.SAVESTATE(SAVESTATE)) bg (
 	.page (pages[1]),
 	.req_a (bg_a), .req_b (bg_b),
 	.gnt_a (gnt_bg_a), .gnt_b (gnt_bg_b),
-	.ka_q (kra_q), .kb_q (krb_q),
+	.ka_q (ka_rd), .kb_q (kb_rd),
 	.pix,
 	.ss_shift,
 	.ss_si (ss_4),
@@ -258,8 +262,8 @@ king_adpcm_xfer #(.SAVESTATE(SAVESTATE)) adpcm (
 	.req (adpcm_req),
 	.req_bank (adpcm_bank),
 	.gnt (gnt_adpcm_a || gnt_adpcm_b),
-	.ka_q (kra_q),
-	.kb_q (krb_q),
+	.ka_q (ka_rd),
+	.kb_q (kb_rd),
 	.kr_d (kr_d_adpcm),
 	.kr_cs0_n, .kr_cs1_n, .kr_rh_l, .kr_wr_n,
 	.kr_busy (adpcm_kr_busy),
@@ -279,8 +283,8 @@ king_rb_xfer #(.SAVESTATE(SAVESTATE)) rb (
 	.req (rb_req),
 	.req_bank (rb_bank),
 	.gnt (gnt_rb_a || gnt_rb_b),
-	.ka_q (kra_q),
-	.kb_q (krb_q),
+	.ka_q (ka_rd),
+	.kb_q (kb_rd),
 	.reqr_n,
 	.kr_busy (adpcm_kr_busy),
 	.kr_d (kr_d_rb),

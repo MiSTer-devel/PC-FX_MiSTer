@@ -62,7 +62,7 @@ package pcfx_ss_pkg;
 	localparam logic [31:0] SIZE_DWORDS = 32'(2 * (WORDS - 1));
 
 	// Scalar field meanings must match even when segment lengths stay equal.
-	localparam logic [31:0] CPU_STATE_VERSION = 32'd2;
+	localparam logic [31:0] CPU_STATE_VERSION = 32'd7;
 
 	function automatic logic [31:0] layout_hash();
 		logic [31:0] h = 32'h811C9DC5;

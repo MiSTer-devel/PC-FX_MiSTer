@@ -10,7 +10,8 @@
 //   I/O     000 K-port, 100-600 HuC chips, 700 ERST, C00 IOC, E00 ITC,
 //           F00 timer (A11:8 only); 0040_0000-007F_FFFF expansion bus
 //
-// wait is the clock count minus 2 for kinds timed by the bus counter.
+// wait is the clock count minus 2 for kinds timed by the bus counter. Glue
+// register reads take no wait, glue register writes 4.
 
 module ga_decode
 	import upd65641_pkg::*;
@@ -49,7 +50,12 @@ always_comb begin
 			wait_cnt = 4'd2;
 		end else begin
 			case (a_blk)
-				4'h0, 4'h7, 4'hC, 4'hE, 4'hF: kind = K_GLUE;
+				4'h0, 4'h7, 4'hC, 4'hE, 4'hF: begin
+					kind = K_GLUE;
+					// The glue answers reads of its own registers with no wait.
+					if (rw)
+						wait_cnt = 4'd0;
+				end
 				4'h1, 4'h2, 4'h3, 4'h4, 4'h5, 4'h6: kind = rw ? K_IOR : K_IOW;
 				default: kind = K_NONE;
 			endcase
